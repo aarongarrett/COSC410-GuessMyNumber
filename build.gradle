@@ -1,0 +1,93 @@
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath files(mkdir('build/classes/java/main'))
+        classpath 'org.robotframework:swinglibrary:1.9.8'
+    }
+}
+
+plugins {
+    id 'com.github.kt3k.coveralls' version '2.6.3'
+    id 'org.roboscratch.robot' version '0.1.2'
+}
+
+apply plugin: 'java'
+apply plugin: 'jacoco'
+apply plugin: 'application'
+apply plugin: 'idea'
+apply plugin: 'eclipse'
+
+repositories {
+    mavenCentral()
+}
+
+project.ext {
+    javaVersion = '1.8'
+    junitVersion = '4.12'
+}
+
+compileJava {
+    targetCompatibility = javaVersion
+    sourceCompatibility = javaVersion
+}
+
+dependencies {
+    compile 'org.slf4j:slf4j-api:1.7.18'
+    compile 'org.glassfish:javax.json:1.1.2'
+    testCompile 'junit:junit:' + junitVersion
+    testCompile "org.mockito:mockito-core:1.+"
+    testCompile 'org.powermock:powermock-module-junit4:1.6.5'
+    testCompile 'org.powermock:powermock-api-mockito:1.6.5'
+}
+
+tasks.withType(JavaCompile) {
+    options.compilerArgs += ['-proc:none', '-Xlint:unchecked', '-Xlint:deprecation']
+}
+
+version = '1.0'
+mainClassName = 'edu.wofford.Main'
+
+jar {
+    manifest {
+        attributes 'Main-Class': mainClassName,
+                   'Implementation-Title': 'Guess My Number',
+                   'Implementation-Version': version
+    }
+}
+
+test {
+    jacoco {
+        append = false
+    }
+}
+
+jacocoTestReport {
+    reports {
+        xml.enabled = true // coveralls plugin depends on xml format report
+        html.enabled = true
+    }
+    afterEvaluate {
+        classDirectories = files(classDirectories.files.collect {
+            fileTree(dir: it,
+                     exclude: [
+                        '**/edu/wofford/Main*',
+                        '**/keywords/**'
+                    ])
+        })
+    }
+}
+
+javadoc {
+    options.with {
+        links 'https://docs.oracle.com/javase/8/docs/api/'
+    }
+    exclude 'edu/wofford/Main*'
+    exclude 'keywords/**'
+}
+
+runrobot.data_sources = 'src/acceptance'
+runrobot.outputdir = 'build/reports/robot'
+runrobot.debugfile = 'debug.log'
+runrobot.dependsOn build
